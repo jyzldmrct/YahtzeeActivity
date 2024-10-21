@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,6 +27,8 @@ import ph.edu.auf.dimarucut.jayzel.yahtzee_activity.ui.theme.LightBlue
 import ph.edu.auf.dimarucut.jayzel.yahtzee_activity.ui.theme.PokerInOctober
 import ph.edu.auf.dimarucut.jayzel.yahtzee_activity.ui.theme.Yahtzee_ActivityTheme
 import kotlin.random.Random
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +46,16 @@ class MainActivity : ComponentActivity() {
 fun YahtzeeGame() {
     var dice by remember { mutableStateOf(List(6) { Random.nextInt(1, 7) }) }
     var result by remember { mutableStateOf("") }
+    var rollDice by remember { mutableStateOf(false) }
+
+    if (rollDice) {
+        LaunchedEffect(Unit) {
+            delay(600)
+            dice = List(6) { Random.nextInt(1, 7) }
+            result = checkCombinations(dice)
+            rollDice = false
+        }
+    }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -47,14 +63,15 @@ fun YahtzeeGame() {
                 .padding(innerPadding)
                 .fillMaxSize()
                 .background(LightBlue),
-
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = result,
+            Text(
+                text = result,
                 fontFamily = PokerInOctober,
                 fontSize = 32.sp,
-                color = Blue)
+                color = Blue
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -68,22 +85,14 @@ fun YahtzeeGame() {
                     Column {
                         Row {
                             dice.take(3).forEach { die ->
-                                Image(
-                                    painter = painterResource(id = getDiceImage(die)),
-                                    contentDescription = "Dice $die",
-                                    modifier = Modifier.size(100.dp)
-                                )
+                                AnimatedDice(die)
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row {
                             dice.drop(3).forEach { die ->
-                                Image(
-                                    painter = painterResource(id = getDiceImage(die)),
-                                    contentDescription = "Dice $die",
-                                    modifier = Modifier.size(100.dp)
-                                )
+                                AnimatedDice(die)
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                         }
@@ -91,21 +100,45 @@ fun YahtzeeGame() {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                dice = List(6) { Random.nextInt(1, 7) }
-                result = checkCombinations(dice)
-            },
+            Button(
+                onClick = {
+                    dice = List(6) { 0 }
+                    result = ""
+                    rollDice = true
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = White,
                     contentColor = Blue
                 )
             ) {
-                Text("Roll Dice",
+                Text(
+                    "Roll Dice",
                     fontFamily = PokerInOctober,
-                    fontSize = 24.sp)
+                    fontSize = 24.sp
+                )
             }
         }
     }
+}
+
+@Composable
+fun AnimatedDice(die: Int) {
+    val alpha by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 50, easing = LinearEasing)
+    )
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 50, easing = LinearEasing)
+    )
+
+    Image(
+        painter = painterResource(id = getDiceImage(die)),
+        contentDescription = "Dice $die",
+        modifier = Modifier
+            .size(100.dp)
+            .graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale)
+    )
 }
 
 fun getDiceImage(die: Int): Int {
